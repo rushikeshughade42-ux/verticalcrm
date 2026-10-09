@@ -137,14 +137,6 @@ export default function CustomerProfilePage() {
       }
     }
 
-    if (
-      customer &&
-      !['cust-101', 'cust-102', 'cust-103'].includes(customer.id) &&
-      (r.status === 'Completed' || (r.rating && r.rating > 0))
-    ) {
-      return true;
-    }
-
     return false;
   });
 
