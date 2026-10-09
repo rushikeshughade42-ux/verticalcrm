@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Development / Open Mode for initial setup & seeding
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
