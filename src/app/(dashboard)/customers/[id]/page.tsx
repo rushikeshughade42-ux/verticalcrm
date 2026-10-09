@@ -213,78 +213,7 @@ export default function CustomerProfilePage() {
         </div>
       </div>
 
-      {/* Dedicated Customer Review & Rating Record Section (Renders only when customer fills review) */}
-      {customerReviews.length > 0 && (
-        <div className="apple-card p-6 space-y-4 bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-orange-50/40 border-amber-200/90 shadow-md animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-amber-200/70 pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="h-10 w-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-amber-500/20">
-                <Star className="w-5 h-5 fill-white" />
-              </div>
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Customer Review & Rating Record</h2>
-                <p className="text-xs text-slate-500">Submitted rating and feedback from {customer.name}</p>
-              </div>
-            </div>
 
-            <span className="apple-pill bg-amber-100 text-amber-900 border-amber-300 font-extrabold text-xs">
-              {customerReviews.length} Review(s) Received
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {customerReviews.map((rev) => (
-              <div key={rev.id} className="bg-white p-4 rounded-2xl border border-amber-100/90 shadow-2xs space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-4 h-4 ${
-                            star <= (rev.rating || 5) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs font-extrabold text-amber-900">
-                      {rev.rating || 5}-Star Customer Rating
-                    </span>
-                  </div>
-
-                  <span
-                    className={`apple-pill text-[10px] font-extrabold ${
-                      rev.rating && rev.rating >= 4
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : 'bg-purple-50 text-purple-800 border-purple-200'
-                    }`}
-                  >
-                    {rev.rating && rev.rating >= 4 ? '5-Star Google Review' : 'Private Management Feedback'}
-                  </span>
-                </div>
-
-                {rev.feedback_text ? (
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs text-slate-800">
-                    <p className="font-bold text-slate-400 uppercase text-[9px] tracking-wider mb-1">
-                      Submitted Customer Feedback Comments:
-                    </p>
-                    <p className="italic text-slate-800 font-medium leading-relaxed">&quot;{rev.feedback_text}&quot;</p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-500 italic">
-                    Customer selected {rev.rating || 5} stars on Google Maps without additional written comments.
-                  </p>
-                )}
-
-                <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-amber-100/60">
-                  <span>Status: Verified Customer Review</span>
-                  <span>Submitted: {new Date(rev.created_at || Date.now()).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Jobs & Lifecycle Section */}
       <div className="space-y-4">
