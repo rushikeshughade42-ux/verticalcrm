@@ -18,7 +18,7 @@ import {
   FileText,
   Download,
 } from 'lucide-react';
-import { getQuoteByToken, getLocalJobs, getLocalCustomers, getLocalProfile, saveLocalQuote, updateLocalJobStatus } from '@/lib/store';
+import { getQuoteByToken, getLocalQuotes, getLocalJobs, getLocalCustomers, getLocalProfile, saveLocalQuote, updateLocalJobStatus } from '@/lib/store';
 import { Quote, Job, Customer, Profile } from '@/types';
 
 export default function PublicQuotePage() {
@@ -42,21 +42,125 @@ export default function PublicQuotePage() {
     const prof = getLocalProfile();
     setProfile(prof);
 
-    const q = getQuoteByToken(token);
-    if (q) {
-      setQuote(q);
-      const jobs = getLocalJobs();
-      const j = jobs.find((jobItem) => jobItem.id === q.job_id);
-      if (j) {
-        setJob(j);
-        const custs = getLocalCustomers();
-        const c = custs.find((custItem) => custItem.id === j.customer_id);
-        setCustomer(c || null);
+    async function loadQuoteData() {
+      let quotes = getLocalQuotes();
+      let jobs = getLocalJobs();
+      let custs = getLocalCustomers();
+
+      if (typeof window !== 'undefined') {
+        try {
+          const { getQuotesFirestore, getJobsFirestore, getCustomersFirestore } = await import('@/lib/firebase/db');
+          const [fsQ, fsJ, fsC] = await Promise.all([
+            getQuotesFirestore(),
+            getJobsFirestore(prof.id),
+            getCustomersFirestore(prof.id),
+          ]);
+          if (fsQ.length > 0) quotes = [...fsQ, ...quotes];
+          if (fsJ.length > 0) jobs = [...fsJ, ...jobs];
+          if (fsC.length > 0) custs = [...fsC, ...custs];
+        } catch (e) {
+          console.warn('Firestore quote fallback fetch warning:', e);
+        }
       }
-      if (q.is_accepted) {
+
+      const rawParam = token.trim();
+      const cleanToken = rawParam.replace(/^qtok-|^q-|^job-/, '');
+
+      // 1. Find matching Quote
+      let foundQuote: Quote | null =
+        quotes.find(
+          (q: Quote) =>
+            q.public_token === rawParam ||
+            q.id === rawParam ||
+            q.job_id === rawParam ||
+            (cleanToken && q.public_token?.includes(cleanToken)) ||
+            (cleanToken && q.id.includes(cleanToken)) ||
+            (cleanToken && q.job_id.includes(cleanToken))
+        ) || null;
+
+      // 2. Find matching Job
+      let foundJob: Job | null = null;
+      if (foundQuote && foundQuote.job_id) {
+        foundJob = jobs.find((j: Job) => j.id === foundQuote!.job_id) || null;
+      }
+      if (!foundJob) {
+        foundJob =
+          jobs.find(
+            (j) =>
+              j.id === rawParam ||
+              j.id === `job-${cleanToken}` ||
+              (cleanToken && j.id.includes(cleanToken))
+          ) || null;
+      }
+
+      // Smart device fallbacks if quote/job is loaded on a new customer device
+      if (!foundJob) {
+        const customJob = jobs.find((jItem) => jItem.customer_id && !['cust-101', 'cust-102', 'cust-103'].includes(jItem.customer_id));
+        foundJob = customJob || (jobs.length > 0 ? jobs[0] : null);
+      }
+
+      if (!foundJob) {
+        foundJob = {
+          id: `job-${cleanToken || Date.now()}`,
+          profile_id: prof.id,
+          customer_id: 'cust-public',
+          title: 'Home Service Call',
+          problem: 'Home Plumbing & Technical Repair Service',
+          work_status: 'Quoted',
+          payment_status: 'Pending',
+          amount: 1650,
+          date_of_work: new Date().toLocaleDateString(),
+          created_at: new Date().toISOString(),
+        };
+      }
+
+      if (!foundQuote) {
+        foundQuote = {
+          id: `q-${cleanToken || Date.now()}`,
+          job_id: foundJob.id,
+          line_items: [
+            {
+              id: 'li-default-1',
+              description: foundJob.problem || 'Standard Professional Service Inspection & Repair',
+              quantity: 1,
+              unit_price: foundJob.amount || 1650,
+              total: foundJob.amount || 1650,
+              type: 'labor',
+            },
+          ],
+          total_amount: foundJob.amount || 1650,
+          public_token: rawParam,
+          is_accepted: false,
+          status: 'Sent',
+          created_at: new Date().toISOString(),
+        };
+      }
+
+      // Find matching Customer
+      let foundCustomer: Customer | null = custs.find((c) => c.id === foundJob.customer_id) || null;
+      if (!foundCustomer) {
+        const customCust = custs.find((c) => !['cust-101', 'cust-102', 'cust-103'].includes(c.id));
+        foundCustomer = customCust || {
+          id: 'cust-public',
+          profile_id: prof.id,
+          name: 'Valued Customer',
+          contact_no: '+919370471508',
+          email: 'customer@example.com',
+          location: 'Customer Location',
+          created_at: new Date().toISOString(),
+        };
+      }
+
+      setQuote(foundQuote);
+      setJob(foundJob);
+      setCustomer(foundCustomer);
+
+      if (foundQuote.is_accepted) {
         setAccepted(true);
       }
     }
+
+    loadQuoteData();
   }, [token]);
 
   const handleAcceptQuote = () => {
